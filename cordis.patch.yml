@@ -1,0 +1,4 @@
+# DSH Mobile Web bundle layer: one removable dual-face plugin row.
+- insert:
+    - id: dsh-mobile-web
+      name: 'dsh-mobile-web'
