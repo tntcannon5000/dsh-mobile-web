@@ -41,6 +41,11 @@ The browser PWA is not the native Sorsama Android application. The plugin does n
 14. On candybar phones, horizontal swipes move between Conversation Views. A right swipe from the leftmost View opens the sidebar; sidebar-close gestures continue to take priority while the drawer is open.
 15. On candybar phones, keep the composer docked immediately above the visible software keyboard. Its compact active-chat toolbar keeps Commands, access/mode controls, third-party left-slot actions such as file attachment, and the submit action; controls moved into Chat Info do not consume composer width.
 16. Prefer minimal changes that preserve familiar Harness behavior and reuse live slot contributions rather than rebuilding their interactions.
+17. On active candybar chats, use a two-row header: the official DeepSeek sidebar toggle and a larger Session title share the first row, while the left-aligned Conversation View tabs occupy a clean second row below them.
+18. On touch-mobile layouts, including unfolded foldables, visually hide conversation and document scrollbars without disabling scrolling. Defer wider candybar user-message bubbles until Harness exposes a semantic bubble anchor; do not couple the plugin to the current unmarked message DOM depth.
+19. Keep the mobile composer slightly clear of the bottom safe area, use a concise single-line default hint that does not create a scrollable empty strip, preserve Harness's bounded scrolling for long drafts, and keep the software keyboard open when the access control is used.
+20. On candybar phones, bottom-align the Chat Info card stack above the composer in this top-to-bottom order: Session data, Session, Session metrics, then Model & usage. Mobile model selection must use touch-sized rows in a viewport-fitting sheet, and sending from Chat Info must return to Chat automatically.
+21. In the installed Android/relay experience, browser Back from an active Harness session returns to Harness's new-session surface and stops there instead of exposing the relay sign-in page beneath the authenticated app.
 
 ## Experience principles
 

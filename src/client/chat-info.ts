@@ -1,11 +1,12 @@
 import { createElement, useEffect, useRef, type ReactNode } from 'react'
 
-const NAMESPACE = 'dsh-mobile-web'
+export const MOBILE_WEB_NAMESPACE = 'dsh-mobile-web'
 const NARROW_PORTRAIT_QUERY = '(max-width: 600px) and (orientation: portrait)'
 const INFO_SOURCE_ATTRIBUTE = 'data-dsh-mobile-info-source'
 
 const en = {
   'view.chatInfo': 'Chat Info',
+  'composer.placeholder': 'Message or task · /commands · @files',
   'section.metrics': 'Session metrics',
   'section.activity': 'Session',
   'section.model': 'Model & usage',
@@ -26,6 +27,7 @@ const en = {
 
 const zh = {
   'view.chatInfo': '聊天信息',
+  'composer.placeholder': '输入消息或任务 · /commands · @文件',
   'section.metrics': '会话指标',
   'section.activity': '会话',
   'section.model': '模型与用量',
@@ -44,8 +46,8 @@ const zh = {
   'row.unavailable': '不可用',
 } as const
 
-type TranslationKey = keyof typeof en
-type Translate = (key: TranslationKey) => string
+export type MobileTranslationKey = keyof typeof en
+export type MobileTranslate = (key: MobileTranslationKey) => string
 
 type SlotComponent = (props: ChatInfoViewProps) => ReactNode
 
@@ -67,7 +69,7 @@ export interface MobileSlots {
 /** Small portion of the public locale service used by this plugin. */
 export interface MobileLocale {
   register(namespace: string, dictionaries: { en: typeof en, zh: typeof zh }): () => void
-  bind(namespace: string): Translate
+  bind(namespace: string): MobileTranslate
 }
 
 /** Services needed to contribute the responsive Chat Info View. */
@@ -77,11 +79,11 @@ export interface MobileInfoContext {
 }
 
 interface ChatInfoInjected {
-  mountInfo: (root: HTMLElement, t: Translate) => () => void
+  mountInfo: (root: HTMLElement, t: MobileTranslate) => () => void
 }
 
 interface ChatInfoViewProps extends ChatInfoInjected {
-  t: Translate
+  t: MobileTranslate
 }
 
 interface ProjectionSource {
@@ -98,7 +100,7 @@ interface Placement {
   anchor: HTMLElement
 }
 
-function section(t: Translate, key: TranslationKey, zone: string): ReactNode {
+function section(t: MobileTranslate, key: MobileTranslationKey, zone: string): ReactNode {
   return createElement('section', { 'data-dsh-mobile-info-section': zone },
     createElement('h2', null, t(key)),
     createElement('div', { 'data-dsh-mobile-info-zone': zone }))
@@ -117,10 +119,10 @@ function ChatInfoView({ mountInfo, t }: ChatInfoViewProps): ReactNode {
     ref: rootRef,
     'data-dsh-mobile-chat-info': '',
   },
-  section(t, 'section.metrics', 'metrics'),
+  section(t, 'section.data', 'data'),
   section(t, 'section.activity', 'activity'),
-  section(t, 'section.model', 'model'),
-  section(t, 'section.data', 'data'))
+  section(t, 'section.metrics', 'metrics'),
+  section(t, 'section.model', 'model'))
 }
 
 function directChildrenAll(selector: string): HTMLElement[] {
@@ -135,7 +137,7 @@ function slotGroup(selector: string, label: string, wide = false): ProjectionSou
     : [{ element, label, kind: 'row', wide }]
 }
 
-function projectionSources(t: Translate): Record<string, ProjectionSource[]> {
+function projectionSources(t: MobileTranslate): Record<string, ProjectionSource[]> {
   const activity = slotGroup(
     '[data-slot="conversation.session.header.actions"]',
     t('row.sessionActions'),
@@ -229,23 +231,45 @@ function place({ source, marker, anchor }: Placement, root: HTMLElement): void {
  * @param t - locale-bound translator.
  * @returns disposer restoring the source controls.
  */
-export function installInfoProjection(root: HTMLElement, t: Translate): () => void {
+export function installInfoProjection(root: HTMLElement, t: MobileTranslate): () => void {
   const scrollPort = root.closest<HTMLElement>('[data-conversation-scroll]')
   const previousScrollTop = scrollPort?.scrollTop ?? 0
+  const refreshHeight = (): void => {
+    if (scrollPort === null) return
+    const viewport = window.visualViewport
+    const scrollRect = scrollPort.getBoundingClientRect()
+    const viewportHeight = viewport === null || viewport === undefined
+      ? scrollPort.clientHeight
+      : Math.max(
+          0,
+          Math.min(scrollRect.bottom, viewport.offsetTop + viewport.height)
+            - Math.max(scrollRect.top, viewport.offsetTop),
+        )
+    root.style.setProperty('--dsh-mobile-info-height', `${viewportHeight}px`)
+  }
   if (scrollPort !== null) {
     scrollPort.dataset.dshMobileInfoActive = ''
     scrollPort.scrollTop = 0
-    root.style.setProperty('--dsh-mobile-info-height', `${scrollPort.clientHeight}px`)
+    refreshHeight()
   }
   let placements: Placement[] = []
   let frame: number | null = null
   let placeScheduled = false
   let rebuilding = false
+  let initialBottomPending = true
   const resizeObserver = new ResizeObserver(() => { schedulePlace() })
 
   const placeAll = (): void => {
     placeScheduled = false
     frame = null
+    if (initialBottomPending) {
+      initialBottomPending = false
+      root.scrollTop = root.scrollHeight
+      if (root.scrollTop > 0) {
+        schedulePlace()
+        return
+      }
+    }
     for (const placement of placements) place(placement, root)
   }
   function schedulePlace(): void {
@@ -299,13 +323,13 @@ export function installInfoProjection(root: HTMLElement, t: Translate): () => vo
   const mutationObserver = sourceContainers.length === 0 ? null : new MutationObserver(() => { rebuild() })
   for (const container of sourceContainers) mutationObserver?.observe(container, { childList: true })
   const onWindowResize = (): void => {
-    if (scrollPort !== null) {
-      root.style.setProperty('--dsh-mobile-info-height', `${scrollPort.clientHeight}px`)
-    }
+    refreshHeight()
+    root.scrollTop = root.scrollHeight
     schedulePlace()
   }
   root.addEventListener('scroll', schedulePlace, { passive: true })
   window.addEventListener('resize', onWindowResize)
+  window.visualViewport?.addEventListener('resize', onWindowResize)
   rebuild()
 
   return () => {
@@ -313,6 +337,7 @@ export function installInfoProjection(root: HTMLElement, t: Translate): () => vo
     resizeObserver.disconnect()
     root.removeEventListener('scroll', schedulePlace)
     window.removeEventListener('resize', onWindowResize)
+    window.visualViewport?.removeEventListener('resize', onWindowResize)
     root.style.removeProperty('--dsh-mobile-info-height')
     if (frame !== null) window.cancelAnimationFrame(frame)
     placeScheduled = false
@@ -333,8 +358,8 @@ export function installInfoProjection(root: HTMLElement, t: Translate): () => vo
  * @returns disposer removing listeners, locale copy, and any active View entry.
  */
 export function installChatInfoView(context: MobileInfoContext): () => void {
-  const disposeLocale = context.locale.register(NAMESPACE, { en, zh })
-  const t = context.locale.bind(NAMESPACE)
+  const disposeLocale = context.locale.register(MOBILE_WEB_NAMESPACE, { en, zh })
+  const t = context.locale.bind(MOBILE_WEB_NAMESPACE)
   const media = window.matchMedia(NARROW_PORTRAIT_QUERY)
   let disposeView: (() => void) | null = null
   const sync = (): void => {
@@ -343,7 +368,7 @@ export function installChatInfoView(context: MobileInfoContext): () => void {
         name: 'conversation.view',
         id: 'mobile-chat-info',
         order: 5,
-        locale: NAMESPACE,
+        locale: MOBILE_WEB_NAMESPACE,
         label: () => t('view.chatInfo'),
         inject: (): ChatInfoInjected => ({ mountInfo: installInfoProjection }),
       }, ChatInfoView))

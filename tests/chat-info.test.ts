@@ -45,10 +45,30 @@ describe('Chat Info View', () => {
     const scrollPort = document.querySelector<HTMLElement>('[data-conversation-scroll]')
     if (root === null || actions === null || originalParent === null || scrollPort === null) throw new Error('invalid fixture')
     scrollPort.scrollTop = 77
+    Object.defineProperty(scrollPort, 'clientHeight', { configurable: true, value: 700 })
+    vi.spyOn(scrollPort, 'getBoundingClientRect').mockReturnValue({
+      x: 0, y: 80, width: 380, height: 700, top: 80, right: 380, bottom: 780, left: 0,
+      toJSON: () => ({}),
+    })
+    let viewportResize: (() => void) | undefined
+    const visualViewport = {
+      height: 500,
+      offsetTop: 0,
+      addEventListener: (_type: string, listener: () => void) => { viewportResize = listener },
+      removeEventListener: vi.fn(),
+    }
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport })
 
     const dispose = installInfoProjection(root, translate as never)
 
     expect(scrollPort.scrollTop).toBe(0)
+    expect(root.style.getPropertyValue('--dsh-mobile-info-height')).toBe('420px')
+    visualViewport.height = 400
+    viewportResize?.()
+    expect(root.style.getPropertyValue('--dsh-mobile-info-height')).toBe('320px')
+    visualViewport.offsetTop = 100
+    viewportResize?.()
+    expect(root.style.getPropertyValue('--dsh-mobile-info-height')).toBe('400px')
     expect(scrollPort.hasAttribute('data-dsh-mobile-info-active')).toBe(true)
     expect(root.querySelectorAll('[data-dsh-mobile-info-marker]')).toHaveLength(7)
     expect(actions.getAttribute('data-dsh-mobile-info-source')).toBe('row')

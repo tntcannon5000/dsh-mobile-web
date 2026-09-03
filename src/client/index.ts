@@ -4,12 +4,12 @@ import { installMobileController, type MobileClientContext } from './mobile-cont
 /** Stable Client plugin name. */
 export const name = 'mobile-web'
 
-/** Layout supplies navigation; slots and locale compose the candybar Chat Info View. */
-export const inject = ['layout', 'slots', 'locale']
+/** Layout and Workspace navigation supply mobile chrome; slots and locale compose Chat Info. */
+export const inject = ['layout', 'slots', 'locale', 'uiWorkspace']
 
 /**
  * Mount responsive presentation and touch behavior.
- * @param context - browser Cordis context with the public layout service.
+ * @param context - browser Cordis context with public layout and Workspace navigation services.
  */
 export function apply(context: MobileClientContext): void {
   context.effect(
