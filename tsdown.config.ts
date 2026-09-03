@@ -26,6 +26,10 @@ const client: UserConfig = {
   dts: false,
   clean: false,
   sourcemap: true,
+  deps: {
+    neverBundle: specifier => specifier === 'react' || specifier.startsWith('react/'),
+    alwaysBundle: specifier => specifier !== 'react' && !specifier.startsWith('react/'),
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
   },

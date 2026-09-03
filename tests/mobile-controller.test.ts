@@ -26,7 +26,11 @@ function viewport(height = 800): MutableViewport {
 
 function pointer(type: string, init: { pointerId: number, clientX: number, clientY: number }): Event {
   const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX: init.clientX, clientY: init.clientY })
-  Object.defineProperty(event, 'pointerId', { value: init.pointerId })
+  Object.defineProperties(event, {
+    pointerId: { value: init.pointerId },
+    pointerType: { value: 'touch' },
+    isPrimary: { value: true },
+  })
   return event
 }
 
@@ -35,7 +39,7 @@ function fixture(collapsed = true): { frame: HTMLElement, conversation: HTMLElem
     <div data-slot="root">
       <div ${collapsed ? 'data-sidebar-collapsed="true"' : ''} data-details-collapsed="true">
         <div><div data-slot="sidebar"><div><button>menu</button></div></div></div>
-        <div><div data-slot="conversation"><main><div data-composer-input contenteditable="true"></div></main></div></div>
+        <div><div data-slot="conversation"><div data-slot="conversation.session.header"><header><div role="tablist"><button role="tab" aria-selected="true">Chat</button><button role="tab" aria-selected="false">Chat Info</button><button role="tab" aria-selected="false">Trajectory</button></div></header></div><main><div data-composer-input contenteditable="true"></div></main></div></div>
         <div data-shell-overlay></div>
       </div>
     </div>`
@@ -49,6 +53,14 @@ function install(): { dispose: () => void, toggle: ReturnType<typeof vi.fn> } {
   const toggle = vi.fn()
   const context: MobileClientContext = {
     layout: { toggleSidebar: toggle },
+    slots: {
+      inject: (_name, setup) => setup(),
+      register: () => () => undefined,
+    },
+    locale: {
+      register: () => () => undefined,
+      bind: () => key => key,
+    },
     effect: () => undefined,
   }
   return { dispose: installMobileController(context), toggle }
@@ -119,6 +131,53 @@ describe('mobile controller', () => {
     conversation.dispatchEvent(pointer('pointerdown', { pointerId: 3, clientX: 120, clientY: 240 }))
     conversation.dispatchEvent(pointer('pointerup', { pointerId: 3, clientX: 122, clientY: 242 }))
     expect(toggle).toHaveBeenCalledTimes(2)
+    dispose()
+  })
+
+  it('moves between candybar tabs before opening the sidebar at the left edge', () => {
+    const { conversation } = fixture(true)
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport() })
+    const tabs = [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
+    const select = (index: number): void => {
+      tabs.forEach((tab, tabIndex) => { tab.setAttribute('aria-selected', `${tabIndex === index}`) })
+    }
+    tabs.forEach((tab, index) => { tab.addEventListener('click', () => { select(index) }) })
+    const { dispose, toggle } = install()
+
+    conversation.dispatchEvent(pointer('pointerdown', { pointerId: 4, clientX: 180, clientY: 300 }))
+    conversation.dispatchEvent(pointer('pointerup', { pointerId: 4, clientX: 90, clientY: 304 }))
+    expect(tabs[1]?.getAttribute('aria-selected')).toBe('true')
+    expect(toggle).not.toHaveBeenCalled()
+    conversation.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+    conversation.dispatchEvent(pointer('pointerdown', { pointerId: 5, clientX: 90, clientY: 300 }))
+    conversation.dispatchEvent(pointer('pointerup', { pointerId: 5, clientX: 180, clientY: 304 }))
+    expect(tabs[0]?.getAttribute('aria-selected')).toBe('true')
+    expect(toggle).not.toHaveBeenCalled()
+    conversation.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+
+    conversation.dispatchEvent(pointer('pointerdown', { pointerId: 6, clientX: 90, clientY: 300 }))
+    conversation.dispatchEvent(pointer('pointerup', { pointerId: 6, clientX: 180, clientY: 304 }))
+    expect(toggle).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
+  it('opens the projected subagent catalog through its keyboard interaction', () => {
+    const { conversation } = fixture(true)
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport() })
+    const source = document.createElement('div')
+    source.dataset.dshMobileInfoSource = 'row'
+    const button = document.createElement('button')
+    button.setAttribute('aria-haspopup', 'tree')
+    source.append(button)
+    conversation.append(source)
+    const keydown = vi.fn()
+    button.addEventListener('keydown', keydown)
+    const { dispose } = install()
+
+    button.click()
+    expect(keydown).toHaveBeenCalledTimes(1)
+    expect((keydown.mock.calls[0]?.[0] as KeyboardEvent | undefined)?.key).toBe('ArrowDown')
     dispose()
   })
 

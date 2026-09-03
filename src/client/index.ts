@@ -4,8 +4,8 @@ import { installMobileController, type MobileClientContext } from './mobile-cont
 /** Stable Client plugin name. */
 export const name = 'mobile-web'
 
-/** Layout supplies the stock sidebar state transition. */
-export const inject = ['layout']
+/** Layout supplies navigation; slots and locale compose the candybar Chat Info View. */
+export const inject = ['layout', 'slots', 'locale']
 
 /**
  * Mount responsive presentation and touch behavior.

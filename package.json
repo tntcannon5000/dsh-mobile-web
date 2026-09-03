@@ -27,7 +27,7 @@
   ],
   "dsh": {
     "engines": {
-      "dsh": ">=0.1.2-alpha.4 <0.2.0"
+      "dsh": "0.1.2-alpha.4"
     },
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -35,6 +35,8 @@
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation",
         "@deepseek-ai/dsh-client-ui-layout"
       ]
     }
@@ -64,7 +66,9 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
     "@types/node": "^24.0.0",
+    "@types/react": "~18.3.1",
     "jsdom": "^26.0.0",
+    "react": "18.2.0",
     "tsdown": "^0.22.2",
     "typescript": "^5.9.2",
     "vitest": "^3.0.0"

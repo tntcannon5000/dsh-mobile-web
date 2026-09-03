@@ -1,3 +1,4 @@
+import { installChatInfoView, type MobileInfoContext } from './chat-info.js'
 import { MOBILE_WEB_STYLES } from './styles.js'
 
 const PACKAGE_ID = 'dsh-mobile-web'
@@ -15,7 +16,7 @@ export interface MobileLayout {
 }
 
 /** Minimum Client context required by the mobile effect. */
-export interface MobileClientContext {
+export interface MobileClientContext extends MobileInfoContext {
   layout: MobileLayout
   effect(effect: () => (() => void), label?: string): unknown
 }
@@ -33,7 +34,9 @@ interface Gesture {
   startY: number
   lastX: number
   lastY: number
+  target: Element | null
   beganInConversation: boolean
+  beganOnInteractiveSurface: boolean
   beganExpanded: boolean
 }
 
@@ -58,6 +61,39 @@ function isConversationTarget(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(CONVERSATION_SELECTOR) !== null
 }
 
+/** Keep navigation swipes away from controls and native horizontal scrollers. */
+function isInteractiveSwipeSurface(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  if (target.closest(
+    'button, a, input, textarea, select, [contenteditable="true"], [role="slider"], [role="menu"], [role="listbox"], [data-composer-card]',
+  ) !== null) return true
+  let cursor: Element | null = target
+  const conversation = target.closest(CONVERSATION_SELECTOR)
+  while (cursor !== null && cursor !== conversation) {
+    if (cursor instanceof HTMLElement && cursor.scrollWidth > cursor.clientWidth) {
+      const overflow = getComputedStyle(cursor).overflowX
+      if (overflow === 'auto' || overflow === 'scroll') return true
+    }
+    cursor = cursor.parentElement
+  }
+  return false
+}
+
+/** Select the adjacent registered Conversation View when one exists. */
+function activateAdjacentView(document: Document, direction: -1 | 1): boolean {
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>(
+    '[data-slot="conversation.session.header"] [role="tablist"] > [role="tab"]',
+  )]
+  const selected = tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true')
+  if (selected < 0) return false
+  const targetIndex = selected + direction
+  if (targetIndex < 0 || targetIndex >= tabs.length) return false
+  const target = tabs[targetIndex]
+  if (target === undefined) return false
+  target.click()
+  return true
+}
+
 /**
  * Install the responsive shell behavior.
  * @param context - browser Cordis services used by the effect.
@@ -70,13 +106,15 @@ export function installMobileController(context: MobileClientContext): () => voi
   style.dataset.pluginCss = `${PACKAGE_ID}/mobile.css`
   style.textContent = MOBILE_WEB_STYLES
   document.head.appendChild(style)
+  const disposeChatInfo = installChatInfoView(context)
 
   let shell: HTMLElement | null = null
   let shellRaf: number | null = null
   let viewportRaf: number | null = null
   let viewportScheduled = false
   let gesture: Gesture | null = null
-  let suppressNextClick = false
+  let suppressClickTarget: Element | null = null
+  let suppressClickUntil = 0
   let maxVisibleHeight = 0
 
   const bindShell = (): void => {
@@ -119,8 +157,16 @@ export function installMobileController(context: MobileClientContext): () => voi
   }
 
   const onFocusChange = (): void => { updateViewport() }
+  const suppressGestureClick = (completed: Gesture): void => {
+    suppressClickTarget = completed.target
+    suppressClickUntil = performance.now() + 250
+  }
   const onPointerDown = (event: PointerEvent): void => {
-    if (!isTouchMobile(window) || gesture !== null) return
+    if (!isTouchMobile(window) || event.pointerType !== 'touch') return
+    if (!event.isPrimary || gesture !== null) {
+      gesture = null
+      return
+    }
     const current = shell ?? findShell(document)
     if (current === null) return
     const beganInConversation = isConversationTarget(event.target)
@@ -132,7 +178,9 @@ export function installMobileController(context: MobileClientContext): () => voi
       startY: event.clientY,
       lastX: event.clientX,
       lastY: event.clientY,
+      target: event.target instanceof Element ? event.target : null,
       beganInConversation,
+      beganOnInteractiveSurface: isInteractiveSwipeSurface(event.target),
       beganExpanded,
     }
   }
@@ -142,7 +190,9 @@ export function installMobileController(context: MobileClientContext): () => voi
     gesture.lastY = event.clientY
     const dx = gesture.lastX - gesture.startX
     const dy = gesture.lastY - gesture.startY
-    if (Math.abs(dx) > Math.abs(dy) * SWIPE_AXIS_RATIO && event.cancelable) event.preventDefault()
+    if (!gesture.beganOnInteractiveSurface
+      && Math.abs(dx) > Math.abs(dy) * SWIPE_AXIS_RATIO
+      && event.cancelable) event.preventDefault()
   }
   const finishGesture = (event: PointerEvent, cancelled: boolean): void => {
     if (gesture?.pointerId !== event.pointerId) return
@@ -159,28 +209,55 @@ export function installMobileController(context: MobileClientContext): () => voi
     if (current === null) return
     const expanded = !current.hasAttribute('data-sidebar-collapsed')
 
-    if (horizontal && dx < 0 && expanded) {
-      suppressNextClick = true
+    if (horizontal && dx < 0 && expanded && completed.beganInConversation) {
+      suppressGestureClick(completed)
       context.layout.toggleSidebar()
       return
     }
-    if (horizontal && dx > 0 && !expanded && completed.beganInConversation) {
-      suppressNextClick = true
-      context.layout.toggleSidebar()
-      return
+    if (horizontal && !expanded && completed.beganInConversation && !completed.beganOnInteractiveSurface) {
+      if (isNarrowPortrait(window)) {
+        const moved = activateAdjacentView(document, dx < 0 ? 1 : -1)
+        if (moved) {
+          suppressGestureClick(completed)
+          return
+        }
+      }
+      if (dx > 0) {
+        suppressGestureClick(completed)
+        context.layout.toggleSidebar()
+        return
+      }
     }
     if (tap && completed.beganExpanded && completed.beganInConversation && expanded) {
-      suppressNextClick = true
+      suppressGestureClick(completed)
       context.layout.toggleSidebar()
     }
   }
   const onPointerUp = (event: PointerEvent): void => { finishGesture(event, false) }
   const onPointerCancel = (event: PointerEvent): void => { finishGesture(event, true) }
   const onClick = (event: MouseEvent): void => {
-    if (suppressNextClick) {
-      suppressNextClick = false
+    const target = event.target instanceof Element ? event.target : null
+    const sameGestureTarget = suppressClickTarget !== null && target !== null
+      && (suppressClickTarget === target
+        || suppressClickTarget.contains(target)
+        || target.contains(suppressClickTarget))
+    if (performance.now() <= suppressClickUntil && sameGestureTarget) {
+      suppressClickTarget = null
+      suppressClickUntil = 0
       event.preventDefault()
       event.stopImmediatePropagation()
+      return
+    }
+    if (performance.now() > suppressClickUntil) suppressClickTarget = null
+    const subagentCount = target?.closest<HTMLButtonElement>(
+      '[data-dsh-mobile-info-source] button[aria-haspopup="tree"]',
+    )
+    if (subagentCount !== undefined && subagentCount !== null) {
+      subagentCount.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        bubbles: true,
+        cancelable: true,
+      }))
       return
     }
     if (!isTouchMobile(window) || !isConversationTarget(event.target)) return
@@ -221,6 +298,7 @@ export function installMobileController(context: MobileClientContext): () => voi
     shell?.removeAttribute('data-dsh-mobile-keyboard-open')
     document.documentElement.style.removeProperty('--dsh-mobile-viewport-height')
     document.documentElement.style.removeProperty('--dsh-mobile-viewport-offset-top')
+    disposeChatInfo()
     style.remove()
   }
 }

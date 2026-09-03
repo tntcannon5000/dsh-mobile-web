@@ -34,11 +34,13 @@ The browser PWA is not the native Sorsama Android application. The plugin does n
 7. Do not add offline caching or a Harness application-shell service worker.
 8. Do not use device-name detection, generated class selectors, or broad DOM mutation.
 9. Prioritize portrait phones and foldables; do not begin a broad desktop or landscape redesign.
-10. Apply presentation changes only to narrow portrait cover/candybar phones unless the user explicitly includes unfolded displays. Validate the unfolded Find N5 for non-regression even when it is outside a change's visual scope.
-11. On narrow portrait phones, keep the collapsed navigation icons in their stock relative positions without reserving the 56 px rail, and open the sidebar as a dimming overlay instead of squeezing the conversation.
+10. Apply presentation changes only to narrow portrait cover/candybar phones unless the user explicitly includes unfolded displays. “Candybar” means the narrow portrait geometry represented by conventional phones and foldable cover displays. Validate the unfolded Find N5 for non-regression even when it is outside a change's visual scope.
+11. On candybar phones with an active chat, keep only the official brand/sidebar toggle in the collapsed navigation layer and integrate it beside the Session title. Keep New Session, Add Workspace, Search, and Settings available inside the expanded overlay drawer without painting them over the conversation.
 12. On every touch-mobile layout, including unfolded foldables, suppress the sidebar-toggle hover tooltip, close an open sidebar when the conversation is tapped or swiped left, and allow a right swipe on the conversation to open it.
-13. On narrow portrait phones, keep the composer docked immediately above the visible software keyboard.
-14. Prefer minimal changes that preserve familiar Harness behavior.
+13. On candybar phones, add a Chat Info View between Chat and Trajectory. It presents existing live Session metrics, mode, background-job, subagent, model, speed, quota, context, and Session-log controls without replacing their owning plugins. Keep third-party Conversation Views in the same tab row.
+14. On candybar phones, horizontal swipes move between Conversation Views. A right swipe from the leftmost View opens the sidebar; sidebar-close gestures continue to take priority while the drawer is open.
+15. On candybar phones, keep the composer docked immediately above the visible software keyboard. Its compact active-chat toolbar keeps Commands, access/mode controls, third-party left-slot actions such as file attachment, and the submit action; controls moved into Chat Info do not consume composer width.
+16. Prefer minimal changes that preserve familiar Harness behavior and reuse live slot contributions rather than rebuilding their interactions.
 
 ## Experience principles
 
