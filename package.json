@@ -69,7 +69,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "pnpm run clean && tsc --emitDeclarationOnly -p tsconfig.build.json && tsdown",
     "test": "vitest run",
-    "check": "pnpm run typecheck && pnpm run test && pnpm run build"
+    "check": "pnpm run typecheck && pnpm run test && pnpm run build",
+    "prepare": "pnpm run build"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2"
