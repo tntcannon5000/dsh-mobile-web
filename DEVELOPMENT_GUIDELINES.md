@@ -32,7 +32,7 @@ Sorsama `dsh-relay` remains the authentication and reverse-proxy layer. The plug
 - Keep Host and Client responsibilities inside the plugin package and use documented Harness extension points.
 - Installation may add the plugin dependency and bundle entry to a Web profile. It must not overwrite the profile's existing bundles, Cordis patch, settings, or local development customizations.
 - Back up the profile manifest and lockfile before the first installation, then inspect the resulting diff.
-- Use a local `link:` dependency during development and a pinned release tag or published npm package for normal installation.
+- Use a local `link:` dependency during development and a pinned GitHub release tag or commit for normal installation (no npm publication).
 
 ## Architecture rules
 
