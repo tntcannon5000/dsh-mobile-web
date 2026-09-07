@@ -138,7 +138,7 @@ The physical panel resolution informs DPR and screenshot density. CSS viewport d
 - Reproducible package installation without machine-specific paths.
 - Focused automated checks and real-device release verification.
 - A documented upgrade and rollback path.
-- Optional npm publication only after GitHub-tag installation is dependable.
+- npm publication for `dsh-mobile-web` (registry package name is free) as a supported install path, alongside GitHub-tag installation; the package declares the latest `dsh-relay` as a dependency and pins supported Harness releases in release notes.
 
 ## Explicit non-goals
 
@@ -169,7 +169,7 @@ Discuss and obtain explicit agreement before:
 - hiding a control instead of relocating or condensing it;
 - adding persistent local storage beyond PWA dismissal state;
 - introducing a service worker;
-- adding a runtime dependency;
+- adding a runtime dependency (accepted: the plugin depends on the latest `dsh-relay` to ensure relay coexistence);
 - requiring a relay source change;
 - widening work to desktop or landscape redesign;
 - using a selector without a documented semantic anchor;
