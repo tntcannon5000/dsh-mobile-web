@@ -503,4 +503,105 @@ export const MOBILE_WEB_STYLES = `
     transition: none;
   }
 }
+
+[data-dsh-mobile-pwa-prompt] {
+  position: fixed;
+  z-index: 2147483647;
+  left: max(12px, env(safe-area-inset-left));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  max-width: 520px;
+  margin-inline: auto;
+  padding: 12px 14px;
+  border: 1px solid rgba(22, 140, 255, 0.9);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(22, 140, 255, 0.2), transparent 42%),
+    linear-gradient(145deg, rgba(2, 7, 19, 0.98), rgba(3, 14, 34, 0.98));
+  color: #fff;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.62), 0 0 24px rgba(22, 140, 255, 0.12);
+  font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  pointer-events: auto;
+  backdrop-filter: blur(18px);
+}
+
+[data-dsh-mobile-pwa-icon] {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+[data-dsh-mobile-pwa-copy] {
+  min-width: 0;
+}
+
+[data-dsh-mobile-pwa-copy] strong,
+[data-dsh-mobile-pwa-copy] span {
+  display: block;
+}
+
+[data-dsh-mobile-pwa-copy] strong {
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+[data-dsh-mobile-pwa-copy] span {
+  color: #a9d4ff;
+  font-size: 12px;
+}
+
+[data-dsh-mobile-pwa-actions] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-dsh-mobile-pwa-actions] button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+[data-dsh-mobile-pwa-install] {
+  background: #168cff;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(22, 140, 255, 0.28);
+}
+
+[data-dsh-mobile-pwa-dismiss] {
+  background: transparent;
+  color: #a9d4ff;
+}
+
+[data-dsh-mobile-pwa-actions] button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 430px) {
+  [data-dsh-mobile-pwa-prompt] {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  [data-dsh-mobile-pwa-actions] {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
 `

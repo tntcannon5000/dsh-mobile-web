@@ -1,10 +1,18 @@
 {
   "name": "dsh-mobile-web",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Unofficial DeepSeek Harness mobile Web and PWA optimizations delivered as a removable DSH plugin.",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
+  "homepage": "https://github.com/tntcannon5000/dsh-mobile-web#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tntcannon5000/dsh-mobile-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tntcannon5000/dsh-mobile-web/issues"
+  },
   "exports": {
     ".": {
       "types": "./lib/types/index.d.ts",
@@ -21,6 +29,7 @@
     "lib/index.js",
     "lib/client.js",
     "lib/types",
+    "assets/pwa",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"
@@ -64,6 +73,9 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "dependencies": {
+    "dsh-relay": "^0.2.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
